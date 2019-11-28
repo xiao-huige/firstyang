@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace空间作用是对SQL进行分类化管理，sql隔离 -->
+<mapper namespace="cn.com.ssm.mapper.UserMapper">
+	<!-- 开启本mapper的namaspace的二级缓存 -->
+
+	<sql id="query_user_where">
+		<if test="usercustom !=null">
+
+			<if test="usercustom.sex !=null and usercustom.sex != ''">
+				and usertest.sex=#{usercustom.sex}
+			</if>
+
+			<if test="usercustom.name !=null and usercustom.name !=''">
+				and usertest.name like '%${usercustom.name}%'
+			</if>
+
+			<!-- <if test="ids!=null"> <foreach collection="ids" item="user_id" open="and 
+				(" close=")" separator="or"> id=#{user_id} </foreach> </if> -->
+
+			<if test="ids!=null">
+				<foreach collection="ids" item="user_id" open="and id in("
+					close=")" separator=",">
+					#{user_id}
+				</foreach>
+			</if>
+		</if>
+	</sql>
+	<!-- 用户信息的综合查询 -->
+	<!-- #{usercustom.sex}:取出POJO 包装对象的性别属性值 UserQueryVo为包装类 ${usercustom.name}:取出pojo包装对象中用户的名称属性 
+		id,name,sex,address -->
+	<select id="findUserList"
+		parameterType="cn.com.ssm.po.UserQueryVo"
+		resultType="cn.com.ssm.po.UserCustom">
+		select id ,name ,sex ,address from usertest
+		<!-- where usertest.sex=#{usercustom.sex} and usertest.name like '%${usercustom.name}%' -->
+		<where>
+			<!-- 引用SQL片段，这里还可以引用其他的SQL片段 -->
+			<!-- <include refid="query_user_where"></include> -->
+			<include refid="query_user_where"></include>
+
+		</where>
+	</select>
+
+	<select id="findUserCount"
+		parameterType="cn.com.ssm.po.UserQueryVo" resultType="int">
+		select count(*) from usertest
+		<where>
+			<!-- 引用SQL片段，这里还可以引用其他的SQL片段 -->
+			<include refid="query_user_where"></include>
+		</where>
+	</select>
+
+	<!-- 在配置文件中配置很多sql -->
+	<!-- 将sql语句封装到statement中，所以id成为statement的id -->
+	<!-- #{}占位符 -->
+	<!-- #{id}的id 代表的是接受输入的参数，参数名称就是id,如果是简单JAVA类型，可以任意 -->
+	<!-- resultType：单条记录 sql输出结果的所映射的JAVA对象类型 ，将单条记录映射成JAVA对象 使用${ }拼接sql,引起sql注入 
+		${value}:接受输入参数的内容，如果传入的类型是简单类型，${ }中只能使用value 
+		 useCache:可以禁用当前的二级缓存，每次查询都会发出sql去查询，默认是true -->
+
+	<select id="findUserById" parameterType="int" resultType="user"
+		>
+		SELECT
+		* FROM usertest1 WHERE id=#{id}
+	</select>
+
+	<select id="findUserById2" parameterType="int" resultType="user">
+		SELECT * FROM tb_user WHERE id=#{value}
+	</select>
+   
+
+	<resultMap type="user" id="userresultmap">
+		<!-- 使用resultMap进行映射 id:表示查询结果集的唯一标识 column:查询出来的列名 property:type指定的pojo类型的属性名 -->
+		<id column="id_" property="id" />
+		<!--result:普通名的映射定义 -->
+		<result column="name_" property="name" />
+		<result column="sex_" property="sex" />
+	</resultMap>
+	<!-- 使用resultMap进行输出映射 -->
+	<select id="findUserByIdResultMap" parameterType="int"
+		resultMap="userresultmap">
+		SELECT
+		id id_,name name_,sex sex_ ,address FROM usertest1
+		WHERE id=#{id}
+	</select>
+
+	<select id="findUserByName" parameterType="userQueryVo"
+		resultType="user">
+		SELECT * FROM usertest WHERE name like
+		'%${usercustom.name}%'
+	</select>
+
+
+	<insert id="creatUser" parameterType="user">
+		<selectKey keyProperty="id" order="AFTER" resultType="int">
+			SELECT LAST_INSERT_ID()
+			<!-- 获取主键 -->
+		</selectKey>
+		insert into
+		usertest1(name,sex,address) values
+		(#{name},#{sex},#{address})
+	</insert>
+
+	<delete id="deleteUser" parameterType="int">
+		delete from usertest1
+		where id=#{id}
+	</delete>
+
+	<update id="updateUser" parameterType="user">
+		update usertest1 set
+		name=#{name},sex=#{sex} where id
+		=#{id}
+	</update>
+
+</mapper>
